@@ -3,7 +3,7 @@ e621p
 
 A full screen E621 presentation or slide show.
 
-http://dorkandanerd.github.io/e621p/
+https://dorkandanerd.github.io/e621p/
 
 Hotkeys
 -------
