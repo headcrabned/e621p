@@ -3,7 +3,7 @@ e621p
 
 A full screen E621 presentation or slide show.
 
-http://silentdeath1.github.io/e621p/
+http://dorkandanerd.github.io/e621p/
 
 Hotkeys
 -------
