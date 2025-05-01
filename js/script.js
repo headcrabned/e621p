@@ -1012,3 +1012,22 @@ $(function () {
             startAnimation(activeIndex + 1);
         }
 });
+$(document).ready(function () {
+    var OPENSTATE_ATTR = "data-openstate";
+
+    $('.collapser').each(function () {
+        var $collapser = $(this);
+        var state = $collapser.attr(OPENSTATE_ATTR);
+
+        if (state === "closed") {
+            // Change the symbol
+            $collapser.text("+");
+
+            // Move parent left so only the collapser is visible
+            var arrowLeftPoint = $collapser.position().left;
+            $collapser.parent().css("left", "-" + arrowLeftPoint + "px");
+        } else {
+            $collapser.text("-");
+        }
+    });
+});
