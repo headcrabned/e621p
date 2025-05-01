@@ -5,7 +5,7 @@ A full screen E621 presentation or slide show.
 
 https://dorkandanerd.github.io/e621p/
 
-*This version modified to hide arrows and to start with thw artist and Nav menu collapsed*
+*This version modified to hide arrows and to start with the Artist and Nav menus collapsed*
 
 Hotkeys
 -------
