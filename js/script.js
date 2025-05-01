@@ -1011,6 +1011,7 @@ $(function () {
             }
             startAnimation(activeIndex + 1);
         }
+});
 $(document).ready(function () {
     var OPENSTATE_ATTR = "data-openstate";
 
