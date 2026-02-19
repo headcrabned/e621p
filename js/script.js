@@ -18,6 +18,7 @@ ep.debug = true;
 var animationSpeed = 1000;
 var shouldAutoNextSlide = true;
 var timeToNextSlide = 6 * 1000;
+var finishLongerVideos = false;
 var cookieDays = 300;
 
 // These vars are used for AJAX Url.
@@ -350,6 +351,18 @@ $(function () {
 
         $('#timeToNextSlide').keyup(updateTimeToNextSlide);
 
+        var finishLongerVideosCookie = "finishLongerVideosCookie";
+        var updateFinishLongerVideos = function () {
+            finishLongerVideos = $("#finishLongerVideos").is(':checked');
+            setCookie(finishLongerVideosCookie, finishLongerVideos, cookieDays);
+        };
+        var finishByCookie = getCookie(finishLongerVideosCookie);
+        if (finishByCookie !== undefined) {
+            finishLongerVideos = (finishByCookie === "true");
+            $("#finishLongerVideos").prop("checked", finishLongerVideos);
+        }
+        $('#finishLongerVideos').change(updateFinishLongerVideos);
+
         $('#prevButton').click(prevSlide);
         $('#nextButton').click(nextSlide);
     };
@@ -595,6 +608,9 @@ $(function () {
             divNode.html('<img class="gfyitem" data-id="'+gfyid+'" data-controls="false"/>');
         }
         if(photo.isVideo & photo.url.indexOf('gfycat.com') >= 0 | (photo.url.substr(photo.url.lastIndexOf('.')+1)) == "webm"){
+          if((photo.url.substr(photo.url.lastIndexOf('.')+1)) == "webm" && finishLongerVideos) {
+            clearTimeout(nextSlideTimeoutId);
+          }
           //console.log("correct");
           divNode.html('<video autoplay class="webm" width="100%" height="100%" onended="slideNext()" controls> <source src="'+photo.url+'"type="video/webm"></video>');
         }
