@@ -495,8 +495,11 @@ $(function () {
             case PAGEDOWN:
             case arrow.right:
             case arrow.down:
-            case SPACE:
                 return nextSlide();
+            case SPACE:
+                $("#autoNextSlide").prop("checked", !$("#autoNextSlide").is(':checked'));
+                updateAutoNext();
+                break;
         }
     });
 
