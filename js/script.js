@@ -126,29 +126,38 @@ $(function () {
     var loadingNextImages = false;
 
     function nextSlide() {
+        var next;
         if(!nsfw) {
             for(var i = activeIndex + 1; i < ep.photos.length; i++) {
                 if (!ep.photos[i].over18) {
-                    return startAnimation(i);
+                    next = i;
+                    break;
                 }
             }
         }
-        if (isLastImage(activeIndex) && !loadingNextImages) {
-            // the only reason we got here and there aren't more pictures yet
-            // is because there are no more images to load, start over
-            return startAnimation(0);
+        if (next === undefined) {
+            if (isLastImage(activeIndex) && !loadingNextImages) {
+                next = 0;
+            } else {
+                next = activeIndex + 1;
+            }
         }
-        startAnimation(activeIndex + 1);
+        saveHistory(next);
+        startAnimation(next);
     }
     function prevSlide() {
+        var prev;
         if(!nsfw) {
             for(var i = activeIndex - 1; i > 0; i--) {
                 if (!ep.photos[i].over18) {
-                    return startAnimation(i);
+                    prev = i;
+                    break;
                 }
             }
         }
-        startAnimation(activeIndex - 1);
+        if (prev === undefined) prev = activeIndex - 1;
+        saveHistory(prev);
+        startAnimation(prev);
     }
 
 
@@ -537,9 +546,8 @@ $(function () {
     // Shows an image and plays the animation
     //
     var showImage = function (docElem) {
-        // Retrieve the index we need to use
         var imageIndex = docElem.data("index");
-
+        saveHistory(imageIndex);
         startAnimation(imageIndex);
     };
 
@@ -774,6 +782,40 @@ $(function () {
         }
     };
 
+    var lastSavedHistoryState = { index: -1, url: "" };
+
+    var saveHistory = function(index) {
+        if (window.history == null) return;
+        var photo = ep.photos[index];
+        if (index !== lastSavedHistoryState.index && photo != null) {
+            lastSavedHistoryState = { index: index, url: photo.url };
+            history.pushState(lastSavedHistoryState, photo.title);
+        }
+    };
+
+    var loadHistory = function(state) {
+        var index;
+        if (state == null || ep.photos[state.index] == null || ep.photos[state.index].url !== state.url) {
+            index = 0;
+        } else {
+            index = state.index;
+            lastSavedHistoryState = state;
+        }
+        startAnimation(index);
+    };
+
+    window.onpopstate = function(event) {
+        loadHistory(event.state);
+    };
+
+    var showDefault = function() {
+        if (window.history != null) {
+            loadHistory(history.state);
+        } else {
+            startAnimation(0);
+        }
+    };
+
     var showHelp = function(e) {
         if (e) e.preventDefault();
         toastr.info(
@@ -891,7 +933,7 @@ $(function () {
 
             // show the first image
             if (activeIndex == -1) {
-                startAnimation(0);
+                showDefault();
             }
 
             if (e621pFailedImageNumber + e621pSuccessImageNumber == e621pLimit) {
