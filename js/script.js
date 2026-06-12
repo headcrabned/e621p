@@ -29,6 +29,7 @@ var e621pRating = '';
 
 var e621pDescending = true;
 var e621pAfterId = 0;
+var sound = false;
 
 // These variables are used to decide if there is more data from the API.
 var e621pFailedImageNumber = 0;
@@ -291,6 +292,20 @@ $(function () {
         }
     };
 
+    var soundCookie = "soundCookie";
+    var updateSound = function () {
+        sound = $("#sound").is(':checked');
+        setCookie(soundCookie, sound, cookieDays);
+        var videoTags = document.getElementsByTagName("video");
+        if (videoTags.length === 1) {
+            videoTags[0].muted = !sound;
+        }
+    };
+    var toggleSound = function () {
+        $("#sound").prop("checked", !$("#sound").is(':checked'));
+        updateSound();
+    };
+
     var nsfwCookie = "nsfwCookie";
     var updateNsfw = function () {
         nsfw = $("#nsfw").is(':checked');
@@ -312,6 +327,15 @@ $(function () {
             $("#nsfw").prop("checked", nsfw);
         }
         $('#nsfw').change(updateNsfw);
+
+        var soundByCookie = getCookie(soundCookie);
+        if (soundByCookie == undefined) {
+            sound = false;
+        } else {
+            sound = (soundByCookie === "true");
+            $("#sound").prop("checked", sound);
+        }
+        $('#sound').change(updateSound);
 
         var orderByCookie = getCookie(nsfwCookie);
         if (orderByCookie == undefined) {
@@ -447,6 +471,7 @@ $(function () {
     var C_KEY = 67;
     var F_KEY = 70;
     var I_KEY = 73;
+    var M_KEY = 77;
     var R_KEY = 82;
     var T_KEY = 84;
 
@@ -488,6 +513,9 @@ $(function () {
                 break;
             case F_KEY:
                 toggleFullScreen();
+                break;
+            case M_KEY:
+                toggleSound();
                 break;
             case PAGEUP:
             case arrow.left:
@@ -617,6 +645,7 @@ $(function () {
           }
           //console.log("correct");
           divNode.html('<video autoplay class="webm" width="100%" height="100%" onended="slideNext()" controls> <source src="'+photo.url+'"type="video/webm"></video>');
+          divNode.find('video').prop('muted', !sound);
         }
 
         //imgNode.appendTo(divNode);
