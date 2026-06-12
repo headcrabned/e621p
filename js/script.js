@@ -15,7 +15,7 @@ var ep = {};
 ep.debug = true;
 
 // Speed of the animation
-var animationSpeed = 1000;
+var animationSpeed = 300;
 var shouldAutoNextSlide = true;
 var timeToNextSlide = 6 * 1000;
 var finishLongerVideos = false;
@@ -365,6 +365,7 @@ $(function () {
 
         $('#prevButton').click(prevSlide);
         $('#nextButton').click(nextSlide);
+        $('#helpButton').click(showHelp);
     };
 
     var addNumberButton = function (numberButton) {
@@ -744,6 +745,24 @@ $(function () {
         }
     };
 
+    var showHelp = function(e) {
+        if (e) e.preventDefault();
+        toastr.info(
+            "<table style='border-spacing:4px 2px'>" +
+            "<tr><td><b>a / space</b></td><td>toggle auto-next</td></tr>" +
+            "<tr><td><b>t</b></td><td>collapse/expand title</td></tr>" +
+            "<tr><td><b>c</b></td><td>collapse/expand controls</td></tr>" +
+            "<tr><td><b>i</b></td><td>open image in new tab</td></tr>" +
+            "<tr><td><b>r</b></td><td>open comments in new tab</td></tr>" +
+            "<tr><td><b>f</b></td><td>toggle fullscreen</td></tr>" +
+            "<tr><td><b>m</b></td><td>toggle sound</td></tr>" +
+            "<tr><td><b>← → ↑ ↓</b></td><td>prev / next slide</td></tr>" +
+            "</table>",
+            "Hotkeys",
+            { closeButton: true, tapToDismiss: true, timeOut: 30000 }
+        );
+    };
+
     var failCleanup = function() {
         if (ep.photos.length > 0) {
             // already loaded images, don't ruin the existing experience
@@ -782,7 +801,7 @@ $(function () {
         //console.log(jsonUrl);
         //log(jsonUrl);
         var failedAjax = function (data) {
-            alert("Failed ajax, maybe a bad url? Sorry about that :(");
+            toastr.error("Failed ajax, maybe a bad url? Sorry about that :(");
             failCleanup();
         };
         var handleData = function (data) {
@@ -796,7 +815,7 @@ $(function () {
             console.log(data)
 
             if (returnJson.length === 0) {
-                alert("No data from this url :(");
+                toastr.error("No data from this url :(");
                 return;
             }
 
@@ -837,11 +856,8 @@ $(function () {
             verifyNsfwMakesSense();
 
             if (!ep.foundOneImage) {
-                // Note: the jsonp url may seem malformed but jquery fixes it.
-                //log(jsonUrl);
-                alert("Sorry, no displayable images found in that url :(");
+                toastr.error("Sorry, no displayable images found in that url :(");
                 getRedditImages();
-                startAnimation(imageIndex + 1);
             }
 
             // show the first image
