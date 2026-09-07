@@ -301,6 +301,34 @@ $(function () {
         }
     };
 
+    // Keep the display from sleeping while the slideshow is on screen.
+    // The lock is released automatically by the browser whenever the page
+    // stops being visible (other tab, minimized), so re-request it every
+    // time we become visible again.
+    // ep.wakeLock is non-null while the lock is held, so it can be inspected
+    // from the console.
+    ep.wakeLock = null;
+    var wakeLockPending = false;
+    var requestWakeLock = function () {
+        if (!navigator.wakeLock || ep.wakeLock || wakeLockPending ||
+                document.visibilityState !== 'visible') {
+            return;
+        }
+        wakeLockPending = true;
+        navigator.wakeLock.request('screen').then(function (lock) {
+            wakeLockPending = false;
+            ep.wakeLock = lock;
+            lock.addEventListener('release', function () {
+                ep.wakeLock = null;
+            });
+        }).catch(function (err) {
+            wakeLockPending = false;
+            if (ep.debug) {
+                console.log('Wake lock request failed: ' + err.name + ' - ' + err.message);
+            }
+        });
+    };
+
     var soundCookie = "soundCookie";
     var updateSound = function () {
         sound = $("#sound").is(':checked');
@@ -399,6 +427,9 @@ $(function () {
         $('#prevButton').click(prevSlide);
         $('#nextButton').click(nextSlide);
         $('#helpButton').click(showHelp);
+
+        requestWakeLock();
+        document.addEventListener('visibilitychange', requestWakeLock);
     };
 
     var addNumberButton = function (numberButton) {
