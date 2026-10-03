@@ -518,6 +518,11 @@ $(function () {
 
     // Register keyboard events on the whole document
     $(document).keyup(function (e) {
+        // Don't treat typing in a text field as hotkeys
+        if ($(e.target).is('input[type=text], textarea')) {
+            return;
+        }
+
         if(e.ctrlKey) {
             // ctrl key is pressed so we're most likely switching tabs or doing something
             // unrelated to redditp UI
@@ -572,6 +577,33 @@ $(function () {
         }
     });
 
+
+    //
+    // Tag search box: grows to fit its contents, Enter loads the new search
+    //
+    var resizeTagSearch = function () {
+        var box = document.getElementById('tagSearch');
+        box.style.height = 'auto';
+        box.style.height = box.scrollHeight + 'px';
+    };
+
+    $('#tagSearch')
+        .val(e621pTags)
+        .on('input', resizeTagSearch)
+        .keydown(function (e) {
+            if (e.key !== 'Enter') {
+                return;
+            }
+            e.preventDefault();
+            // e621 tags are whitespace separated, so collapse newlines/runs of spaces
+            var tags = $(this).val().trim().split(/\s+/).join(' ');
+            var params = new URLSearchParams();
+            params.set('tags', tags);
+            params.set('page', '');
+            params.set('limit', getQueryVariable('limit') || 10);
+            window.location.search = params.toString();
+        });
+    resizeTagSearch();
 
     //
     // Shows an image and plays the animation
