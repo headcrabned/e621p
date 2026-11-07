@@ -1,11 +1,13 @@
 // ==UserScript==
 // @name         e621 Slideshow button
 // @namespace    e621p
-// @version      1.0
+// @version      1.1
 // @description  Adds a "Slideshow" button under the e621 search box that opens the current search in e621p.
 // @match        https://e621.net/*
 // @match        https://e926.net/*
 // @grant        none
+// @updateURL    https://raw.githubusercontent.com/headcrabned/e621p/master/userscript/e621-slideshow.user.js
+// @downloadURL  https://raw.githubusercontent.com/headcrabned/e621p/master/userscript/e621-slideshow.user.js
 // @run-at       document-end
 // ==/UserScript==
 
