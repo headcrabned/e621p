@@ -946,7 +946,27 @@ $(function () {
     var markEndOfResults = function () {
         ep.endOfResults = true;
         loadingNextImages = false;
-        if (isLastImage(activeIndex)) notifyEndOfResults();
+        if (ep.photos.length > 0 && isLastImage(activeIndex)) notifyEndOfResults();
+    };
+
+    // e621 strips the file URL from posts matching its default blacklist (young, gore,
+    // scat, ...) for logged-out users. Count those so the user gets one explanation
+    // instead of an error card per page.
+    ep.hiddenPosts = 0;
+    var hiddenNoticeShown = false;
+    var hiddenMessage = "e621 only shows posts matching its default blacklist to logged-in users, " +
+                        "so the slideshow can't play them. Use \"search on e621\" to see them there.";
+    var emptyPages = 0;
+    var MAX_EMPTY_PAGES = 5;
+    var giveUpNoImages = function () {
+        loadingNextImages = false;
+        if (ep.hiddenPosts > 0) {
+            hiddenNoticeShown = true;
+            toastr.warning(hiddenMessage, "Posts hidden by e621", { timeOut: 30000 });
+        } else {
+            toastr.error("No displayable posts found for this search :(");
+        }
+        failCleanup();
     };
 
     var getRedditImages = function () {
@@ -996,9 +1016,13 @@ $(function () {
 
             if (posts.length === 0) {
                 if (ep.photos.length === 0) {
-                    toastr.error("No posts found for this search :(");
-                    failCleanup();
-                    loadingNextImages = false;
+                    if (ep.hiddenPosts > 0 || emptyPages > 0) {
+                        giveUpNoImages();
+                    } else {
+                        toastr.error("No posts found for this search :(");
+                        failCleanup();
+                        loadingNextImages = false;
+                    }
                 } else {
                     markEndOfResults();
                 }
@@ -1030,7 +1054,8 @@ $(function () {
                 var fileUrl = item.files ? (item.files.original && item.files.original.url)
                                          : (item.file && item.file.url);
                 if(fileUrl == null){
-                    //Item has been deleted, continue.
+                    // Deleted, or hidden from logged-out users by e621's default blacklist
+                    if (!(item.flags && item.flags.deleted)) ep.hiddenPosts++;
                     return
                 }
                 
@@ -1055,8 +1080,20 @@ $(function () {
             verifyNsfwMakesSense();
 
             if (!ep.foundOneImage) {
-                toastr.error("Sorry, no displayable images found in that url :(");
-                getRedditImages();
+                // Nothing playable yet: look a few pages further, at most one request a second
+                emptyPages++;
+                if (ep.endOfResults || emptyPages >= MAX_EMPTY_PAGES) {
+                    giveUpNoImages();
+                } else {
+                    setTimeout(getRedditImages, Math.max(0, e621pLastRequest + 1000 - Date.now()));
+                }
+                return;
+            }
+
+            if (ep.hiddenPosts > 0 && !hiddenNoticeShown) {
+                hiddenNoticeShown = true;
+                toastr.info("Some posts in this search are hidden by e621 for logged-out users and were skipped.",
+                            "Posts hidden by e621", { timeOut: 10000 });
             }
 
             // show the first image
