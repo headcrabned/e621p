@@ -948,12 +948,15 @@ $(function () {
 
             console.log(data)
 
-            if (returnJson.length === 0) {
+            // e621 API (late 2026) returns a bare array of posts; older API wrapped it in {posts: [...]}
+            var posts = Array.isArray(returnJson) ? returnJson : (returnJson.posts || []);
+
+            if (posts.length === 0) {
                 toastr.error("No data from this url :(");
                 return;
             }
 
-            $.each(returnJson.posts, function (i, item) {
+            $.each(posts, function (i, item) {
                 console.log(i, item)
                 if(item.rating == "e" | item.rating == "q"){
                     isOver18 = true;
@@ -973,17 +976,22 @@ $(function () {
                         e621pAfterId = item.id
                     }
                 }
-                if(item.file.url == null){
+                // New API: files.original.url; old API: file.url
+                var fileUrl = item.files ? (item.files.original && item.files.original.url)
+                                         : (item.file && item.file.url);
+                if(fileUrl == null){
                     //Item has been deleted, continue.
                     return
                 }
                 
                 addImageSlide({
-                    url: item.file.url,
-                    title: item.tags.artist,
+                    url: fileUrl,
+                    // New API tags are a flat list with no artist category, so fall back to uploader
+                    title: Array.isArray(item.tags) ? ("#" + item.id + " (uploaded by " + item.uploader_name + ")")
+                                                    : item.tags.artist,
                     over18: isOver18,
                     subreddit: "",
-                    commentsLink: "https://e621.net/post/show/" + item.id
+                    commentsLink: "https://e621.net/posts/" + item.id
                 });
             });
 
