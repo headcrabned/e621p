@@ -28,6 +28,11 @@ var e621pRating = '';
 
 var e621pDescending = true;
 var e621pAfterId = 0;
+// Time of the last e621 API request, so artist lookups can keep clear of the rate limit
+var e621pLastRequest = 0;
+var e621pLastPostsRequest = 0;
+var e621pPostsGap = Infinity;
+var artistLookupGen = 0;
 
 // These variables are used to decide if there is more data from the API.
 var e621pFailedImageNumber = 0;
@@ -906,6 +911,7 @@ $(function () {
                 len += n;
             });
 
+            var gen = ++artistLookupGen;
             var artists = {};
             var applyArtists = function () {
                 pics.forEach(function (p) {
@@ -920,9 +926,17 @@ $(function () {
                     }
                 });
             };
-            // One request at a time to stay well under e621's rate limit
+            // e621 asks for at most 1 request/s (hard limit 2/s). Each lookup waits until
+            // 1s after the last e621 request, a newer batch cancels an older batch's
+            // remaining lookups, and none are sent while posts requests come <2s apart.
+            // Fast slideshows therefore fall back to the post link instead.
             var next = function (i) {
                 if (i >= chunks.length) return;
+                var wait = Math.max(0, e621pLastRequest + 1000 - Date.now());
+                setTimeout(function () {
+                if (gen !== artistLookupGen || e621pPostsGap < 2000) return;
+                if (Date.now() - e621pLastRequest < 1000) return next(i); // a posts request went out meanwhile
+                e621pLastRequest = Date.now();
                 $.ajax({
                     url: "https://e621.net/tags.json",
                     // search[name] takes a comma list; search[name_comma] is silently ignored
@@ -935,13 +949,16 @@ $(function () {
                         next(i + 1);
                     },
                     error: function () { log("Artist lookup failed; keeping post-link titles"); }
-                });
+                }); }, wait);
             };
             next(0);
         };
 
         // I still haven't been able to catch jsonp 404 events so the timeout
         // is the current solution sadly.
+        e621pLastRequest = Date.now();
+        e621pPostsGap = e621pLastRequest - e621pLastPostsRequest;
+        e621pLastPostsRequest = e621pLastRequest;
         $.ajax({
             url: jsonUrl,
             dataType: 'json',
