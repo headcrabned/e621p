@@ -1282,7 +1282,7 @@ $(function () {
         $('#subredditUrl').empty().append($("<a />").attr({
             id: "e621SearchLink", href: e621SearchUrl(), target: "_blank", rel: "noopener",
             title: "Open this search on e621 (e)"
-        }).text("search on e621"));
+        }).text("search on e621 \u2197"));
 
         document.title = "e621p - " + (e621pTags ? e621pTags : "Latest");
     };

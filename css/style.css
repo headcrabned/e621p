@@ -61,7 +61,7 @@ a:hover {
     filter: progid:DXImageTransform.Microsoft.Shadow(Strength=3, Direction=135, Color='#EEEEEE');
 }
 
-#controlsDiv {position: absolute; bottom: 0; left: 0;right: 0;}
+#controlsDiv {position: absolute; bottom: 0; left: 0;right: 0; max-height: none; overflow: visible;}
 #titleDiv {position: absolute; top: 0;left: 0;right: 0;}
 .navbox h2 { padding: 10px 20px 10px 10px; font: bold 20px Helvetica, Arial, Sans-serif; }
 .navbox h3 { padding:  0px 20px 10px 10px; font: bold 12px Helvetica, Arial, Sans-serif; }
@@ -92,8 +92,25 @@ a:hover {
 }
 
 #navboxContents {
-    padding: 10px 25px 10px 0;
+    padding: 10px 0 10px 0;
     margin:0;
+    /* Scroll here, not on #controlsDiv, so a scrollbar never covers the +/- collapser.
+       overflow makes this sit beside the floated collapser rather than under it. */
+    max-height: calc(100vh - 110px);
+    overflow-y: auto;
+}
+
+/* "search on e621" button, styled like the tag search box */
+#e621SearchLink {
+    display: inline-block;
+    padding: 3px 10px;
+    border: solid 1px #555;
+    border-radius: 3px;
+    background-color: rgba(255,255,255,0.1);
+}
+#e621SearchLink:hover {
+    border: solid 1px #2a6496;
+    background-color: #2a6496;
 }
 
 label.checkbox { font-weight: bold; }
