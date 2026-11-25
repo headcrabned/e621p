@@ -519,6 +519,7 @@ $(function () {
     var M_KEY = 77;
     var R_KEY = 82;
     var T_KEY = 84;
+    var E_KEY = 69;
 
 
     // Register keyboard events on the whole document
@@ -566,6 +567,9 @@ $(function () {
                 break;
             case M_KEY:
                 toggleSound();
+                break;
+            case E_KEY:
+                window.open(e621SearchUrl(), "_blank", "noopener");
                 break;
             case PAGEUP:
             case arrow.left:
@@ -659,7 +663,11 @@ $(function () {
 
         if (isLastImage(activeIndex) && ep.subredditUrl.indexOf('/imgur') != 0) {
             // e621pPageNumber++;
-            getRedditImages();
+            if (ep.endOfResults) {
+                notifyEndOfResults();
+            } else {
+                getRedditImages();
+            }
         }
     };
 
@@ -894,6 +902,7 @@ $(function () {
             "<tr><td><b>c</b></td><td>collapse/expand controls</td></tr>" +
             "<tr><td><b>i</b></td><td>open image in new tab</td></tr>" +
             "<tr><td><b>r</b></td><td>open comments in new tab</td></tr>" +
+            "<tr><td><b>e</b></td><td>open this search on e621</td></tr>" +
             "<tr><td><b>f</b></td><td>toggle fullscreen</td></tr>" +
             "<tr><td><b>m</b></td><td>toggle sound</td></tr>" +
             "<tr><td><b>← → ↑ ↓</b></td><td>prev / next slide</td></tr>" +
@@ -924,7 +933,24 @@ $(function () {
         sfw_version: true, nsfw_version: true, artist_request: true, uncredited_artist: true
     };
 
+    // Set once e621 has no more posts for this search; the slideshow then loops
+    // over what it has instead of re-requesting an empty page.
+    ep.endOfResults = false;
+    var endNoticeShown = false;
+    var notifyEndOfResults = function () {
+        if (endNoticeShown) return;
+        endNoticeShown = true;
+        toastr.info("That's every post for this search. The slideshow will loop from the start.",
+                    "End of results", { timeOut: 8000 });
+    };
+    var markEndOfResults = function () {
+        ep.endOfResults = true;
+        loadingNextImages = false;
+        if (isLastImage(activeIndex)) notifyEndOfResults();
+    };
+
     var getRedditImages = function () {
+        if (ep.endOfResults) return;
         //if (noMoreToLoad){
         //    log("No more images to load, will rotate to start.");
         //    return;
@@ -969,7 +995,13 @@ $(function () {
             var posts = Array.isArray(returnJson) ? returnJson : (returnJson.posts || []);
 
             if (posts.length === 0) {
-                toastr.error("No data from this url :(");
+                if (ep.photos.length === 0) {
+                    toastr.error("No posts found for this search :(");
+                    failCleanup();
+                    loadingNextImages = false;
+                } else {
+                    markEndOfResults();
+                }
                 return;
             }
 
@@ -1016,6 +1048,9 @@ $(function () {
             });
 
             lookupArtists(ep.photos.slice(firstNewPhoto));
+
+            // A short page means e621 has nothing after it
+            if (posts.length < Number(e621pLimit)) markEndOfResults();
 
             verifyNsfwMakesSense();
 
@@ -1198,6 +1233,13 @@ $(function () {
     //     });
     // };
 
+    // The user's tags only (not the NSFW-toggle rating), so a round trip through
+    // the userscript comes back to the same slideshow URL
+    var e621SearchUrl = function () {
+        var tags = decodeURIComponent(String(e621pTags || '').replace(/\+/g, ' ')).trim();
+        return "https://e621.net/posts" + (tags ? "?" + $.param({ tags: tags }).replace(/%20/g, '+') : "");
+    };
+
     var setupUrls = function() {
         ep.urlData = ep.getRestOfUrl();
         //log(ep.urlData)
@@ -1236,7 +1278,11 @@ $(function () {
         // if(displayedSubredditName.length > capsize) {
         //     displayedSubredditName = displayedSubredditName.substr(0,capsize) + "&hellip;";
         // }
-        $('#subredditUrl').html("<a href=\' https://www.e621.net \'> E621.net</a>");
+        // Opens the current search on e621 (the userscript's Slideshow button goes the other way)
+        $('#subredditUrl').empty().append($("<a />").attr({
+            id: "e621SearchLink", href: e621SearchUrl(), target: "_blank", rel: "noopener",
+            title: "Open this search on e621 (e)"
+        }).text("search on e621"));
 
         document.title = "e621p - " + (e621pTags ? e621pTags : "Latest");
     };
