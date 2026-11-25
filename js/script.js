@@ -760,7 +760,10 @@ $(function () {
             //rating = rating+"+rating:q";
         }
 
-        var jsonUrl = "https://e621.net/posts.json?tags="+e621pRating+"+"+e621pTags +"&limit="+ e621pLimit+(e621pAfterId != 0 ? `&page=${e621pDescending ? "b" : "a"}${e621pAfterId}` : "");
+        // If the user already put a rating in their tags (e.g. rating:s), don't add the NSFW-toggle one;
+        // e621 ANDs metatags, so "rating:e ... rating:s" returns nothing.
+        if (/(^|[+\s])-?rating:/i.test(decodeURIComponent(e621pTags))) e621pRating = "";
+        var jsonUrl = "https://e621.net/posts.json?tags="+(e621pRating ? e621pRating+"+" : "")+e621pTags +"&limit="+ e621pLimit+(e621pAfterId != 0 ? `&page=${e621pDescending ? "b" : "a"}${e621pAfterId}` : "");
         //console.log(jsonUrl);
         //log(jsonUrl);
         var failedAjax = function (data) {
