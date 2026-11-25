@@ -739,6 +739,14 @@ $(function () {
         $('#recommend').css({'display':'block'});
     };
 
+    // Tags e621 files under the artist category that aren't artist names
+    var notArtistTags = {
+        conditional_dnp: true, avoid_posting: true, unknown_artist: true, anonymous_artist: true,
+        unknown_artist_signature: true, sound_warning: true, epilepsy_warning: true,
+        third_party_edit: true, "third-party_edit": true, signature: true, ai_generated_artist: true,
+        sfw_version: true, nsfw_version: true, artist_request: true, uncredited_artist: true
+    };
+
     var getRedditImages = function () {
         //if (noMoreToLoad){
         //    log("No more images to load, will rotate to start.");
@@ -788,6 +796,7 @@ $(function () {
                 return;
             }
 
+            var firstNewPhoto = ep.photos.length;
             $.each(posts, function (i, item) {
                 console.log(i, item)
                 if(item.rating == "e" | item.rating == "q"){
@@ -818,14 +827,18 @@ $(function () {
                 
                 addImageSlide({
                     url: fileUrl,
-                    // New API tags are a flat list with no artist category; title links to the post instead
+                    // New API tags are a flat list with no artist category; lookupArtists()
+                    // swaps in the artist name once it's known
                     title: Array.isArray(item.tags) ? ("View #" + item.id + " on e621")
                                                     : item.tags.artist,
+                    tags: item.tags,
                     over18: isOver18,
                     subreddit: "",
                     commentsLink: "https://e621.net/posts/" + item.id
                 });
             });
+
+            lookupArtists(ep.photos.slice(firstNewPhoto));
 
             verifyNsfwMakesSense();
 
@@ -867,6 +880,64 @@ $(function () {
             }
             loadingNextImages = false;
 
+        };
+
+        // The new posts.json lists tags as one flat array with no categories, so ask
+        // tags.json which of this batch's tags are artists, then retitle those slides.
+        // Runs after the slides are added, so a slow or failed lookup just leaves the
+        // "View #id on e621" title in place.
+        var lookupArtists = function (pics) {
+            pics = pics.filter(function (p) { return Array.isArray(p.tags); });
+            if (pics.length === 0) return;
+
+            var seen = {}, names = [];
+            pics.forEach(function (p) {
+                p.tags.forEach(function (t) {
+                    if (!seen[t]) { seen[t] = true; names.push(t); }
+                });
+            });
+
+            // e621 rejects the URL (HTTP 414) past ~6000 chars of tags, so split the list
+            var chunks = [[]], len = 0;
+            names.forEach(function (t) {
+                var n = encodeURIComponent(t).length + 3; // + encoded comma
+                if (len + n > 4500 && chunks[chunks.length - 1].length) { chunks.push([]); len = 0; }
+                chunks[chunks.length - 1].push(t);
+                len += n;
+            });
+
+            var artists = {};
+            var applyArtists = function () {
+                pics.forEach(function (p) {
+                    var found = p.tags.filter(function (t) { return artists[t] && !notArtistTags[t]; });
+                    if (found.length === 0) return;
+                    p.title = found.join(", ").replace(/_/g, " ");
+                    var idx = ep.photos.indexOf(p);
+                    $("#numberButton" + (idx + 1)).attr("title", p.title);
+                    if (idx === activeIndex) {
+                        $('#navboxTitle a').text(p.title);
+                        $('#navboxLink').attr('title', p.title);
+                    }
+                });
+            };
+            // One request at a time to stay well under e621's rate limit
+            var next = function (i) {
+                if (i >= chunks.length) return;
+                $.ajax({
+                    url: "https://e621.net/tags.json",
+                    // search[name] takes a comma list; search[name_comma] is silently ignored
+                    data: { "search[name]": chunks[i].join(","), "search[category]": 1, limit: 320 },
+                    dataType: 'json',
+                    timeout: 5000,
+                    success: function (data) {
+                        (Array.isArray(data) ? data : []).forEach(function (t) { artists[t.name] = true; });
+                        applyArtists();
+                        next(i + 1);
+                    },
+                    error: function () { log("Artist lookup failed; keeping post-link titles"); }
+                });
+            };
+            next(0);
         };
 
         // I still haven't been able to catch jsonp 404 events so the timeout
