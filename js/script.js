@@ -558,7 +558,8 @@ $(function () {
         var photo = ep.photos[imageIndex];
         var subreddit = '/r/' + photo.subreddit;
 
-        $('#navboxTitle').html(photo.title);
+        // Title links to the post page on e621 (text() so tag text is not parsed as HTML)
+        $('#navboxTitle').empty().append($("<a />").attr({href: photo.commentsLink, target: "_blank", rel: "noopener"}).text(photo.title));
         //$('#navboxSubreddit').attr('href', ep.redditBaseUrl + subreddit).html(subreddit);
         $('#navboxLink').attr('href', photo.url).attr('title', photo.title);
         $('#navboxCommentsLink').attr('href', photo.commentsLink).attr('title', "Comments on e621");
@@ -814,8 +815,8 @@ $(function () {
                 
                 addImageSlide({
                     url: fileUrl,
-                    // New API tags are a flat list with no artist category, so fall back to uploader
-                    title: Array.isArray(item.tags) ? ("#" + item.id + " (uploaded by " + item.uploader_name + ")")
+                    // New API tags are a flat list with no artist category; title links to the post instead
+                    title: Array.isArray(item.tags) ? ("View #" + item.id + " on e621")
                                                     : item.tags.artist,
                     over18: isOver18,
                     subreddit: "",
